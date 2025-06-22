@@ -17,21 +17,25 @@ openai.api_key = env_key
 DB_PATH = "prompts_db.json"
 
 class PromptManager:
-    def __init__(self, db_path: str = DB_PATH):
+    def __init__(self, db_path: str = DB_PATH, default_system_prompt: str = ""):
         self.db_path = db_path
+        self.default_system_prompt = default_system_prompt
         self._ensure_db()
         self._load()
 
     def _ensure_db(self):
         if not os.path.exists(self.db_path):
             with open(self.db_path, 'w') as f:
-                json.dump({"prompts": [], "system_prompt": ""}, f, indent=4)
+                json.dump({"prompts": [], "system_prompt": self.default_system_prompt}, f, indent=4)
 
     def _load(self):
         with open(self.db_path, 'r') as f:
             self.db = json.load(f)
         if "system_prompt" not in self.db:
-            self.db["system_prompt"] = ""
+            self.db["system_prompt"] = self.default_system_prompt
+            self._save()
+        elif self.default_system_prompt and not self.db.get("system_prompt"):
+            self.db["system_prompt"] = self.default_system_prompt
             self._save()
 
     def _save(self):
