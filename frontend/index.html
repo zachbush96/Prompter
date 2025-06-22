@@ -15,6 +15,10 @@
 <body>
     <h1>Prompter</h1>
 
+    <h2>System Prompt</h2>
+    <textarea id="systemPrompt" rows="3" cols="80" placeholder="System prompt..."></textarea><br>
+    <button onclick="saveSystemPrompt()">Save</button>
+
     <h2>Create Prompt</h2>
     <textarea id="newPrompt" rows="3" cols="80" placeholder="Enter prompt text..."></textarea><br>
     <button onclick="createPrompt()">Create</button>
@@ -64,6 +68,23 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.innerText = text;
     return div.innerHTML;
+}
+
+function fetchSystemPrompt() {
+    fetch(apiBase + '/system_prompt')
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('systemPrompt').value = data.system_prompt || '';
+        });
+}
+
+function saveSystemPrompt() {
+    const text = document.getElementById('systemPrompt').value;
+    fetch(apiBase + '/system_prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+    });
 }
 
 function createPrompt() {
@@ -131,6 +152,7 @@ function regeneratePrompt(id) {
     });
 }
 
+fetchSystemPrompt();
 fetchPrompts();
 </script>
 </body>

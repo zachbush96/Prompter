@@ -29,6 +29,9 @@ class Comment(BaseModel):
 class RegenerateRequest(BaseModel):
     system_prompt: Optional[str] = None
 
+class SystemPrompt(BaseModel):
+    text: str
+
 @app.get("/prompts")
 def list_prompts():
     return pm.list_prompts()
@@ -64,6 +67,15 @@ def regenerate_prompt(prompt_id: str, req: RegenerateRequest):
     except KeyError:
         raise HTTPException(status_code=404, detail="Prompt not found")
     return {"text": new_text}
+
+@app.get("/system_prompt")
+def get_system_prompt():
+    return {"system_prompt": pm.get_system_prompt()}
+
+@app.post("/system_prompt")
+def set_system_prompt(sp: SystemPrompt):
+    pm.set_system_prompt(sp.text)
+    return {"success": True}
 
 if __name__ == "__main__":
     import uvicorn
