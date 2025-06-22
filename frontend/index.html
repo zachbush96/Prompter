@@ -5,30 +5,97 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prompter Frontend</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: auto; }
-        .prompt { border: 1px solid #ccc; padding: 10px; margin: 10px 0; }
-        .iterations { background: #f9f9f9; padding: 5px; }
-        .comments { background: #eef; padding: 5px; }
-        button { margin-right: 5px; }
+        body {
+            font-family: "Courier New", monospace;
+            max-width: 1000px;
+            margin: auto;
+            background: #f2f2f2;
+            color: #000;
+        }
+        h1, h2 {
+            font-weight: bold;
+            border-bottom: 3px solid #000;
+            padding-bottom: 5px;
+        }
+        textarea {
+            width: 100%;
+            border: 3px solid #000;
+            background: #fff;
+            padding: 5px;
+            box-sizing: border-box;
+        }
+        .prompt {
+            border: 3px solid #000;
+            padding: 10px;
+            margin: 15px 0;
+            background: #e8e8e8;
+        }
+        .iterations {
+            background: #fff;
+            border: 2px dashed #000;
+            padding: 5px;
+            margin-top: 10px;
+        }
+        .comments {
+            background: #d0d0ff;
+            border: 2px dashed #000;
+            padding: 5px;
+            margin-top: 10px;
+        }
+        button {
+            margin-right: 5px;
+            border: 3px solid #000;
+            background: #fff;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #000;
+            color: #fff;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+        .main {
+            flex: 1;
+        }
+        .history {
+            flex: 1;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body>
     <h1>Prompter</h1>
 
-    <h2>Create Prompt</h2>
-    <textarea id="newPrompt" rows="3" cols="80" placeholder="Enter prompt text..."></textarea><br>
-    <button onclick="createPrompt()">Create</button>
+    <div class="container">
+        <div class="main">
+            <h2>System Prompt</h2>
+            <textarea id="systemPrompt" rows="3" placeholder="System prompt..."></textarea><br>
+            <button onclick="saveSystemPrompt()">Save</button>
 
-    <h2>Prompts</h2>
-    <div id="prompts"></div>
+            <h2>Create Prompt</h2>
+            <textarea id="newPrompt" rows="3" placeholder="Enter prompt text..."></textarea><br>
+            <button onclick="createPrompt()">Create</button>
+        </div>
+        <div class="history">
+            <h2>Prompts</h2>
+            <div id="prompts"></div>
+        </div>
+    </div>
 
 <script>
 const apiBase = '';
+let allPrompts = [];
 
 function fetchPrompts() {
     fetch(apiBase + '/prompts')
         .then(r => r.json())
         .then(data => {
+            allPrompts = data;
             const container = document.getElementById('prompts');
             container.innerHTML = '';
             data.forEach(p => {
@@ -51,6 +118,7 @@ function renderPrompt(p) {
     html += `<button onclick="showIterations('${p.id}')">Show Iterations</button>`;
     html += `<button onclick="showCommentBox('${p.id}')">Add Comment</button>`;
     html += `<button onclick="regeneratePrompt('${p.id}')">Regenerate</button>`;
+    html += `<button onclick="usePrompt('${p.id}')">Use</button>`;
     html += `<div id="iter-${p.id}" class="iterations" style="display:none"></div>`;
     html += `<div id="comment-${p.id}" style="display:none">
                 <textarea id="comment-text-${p.id}" rows="2" cols="60" placeholder="Enter comment..."></textarea>
@@ -64,6 +132,23 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.innerText = text;
     return div.innerHTML;
+}
+
+function fetchSystemPrompt() {
+    fetch(apiBase + '/system_prompt')
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('systemPrompt').value = data.system_prompt || '';
+        });
+}
+
+function saveSystemPrompt() {
+    const text = document.getElementById('systemPrompt').value;
+    fetch(apiBase + '/system_prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+    });
 }
 
 function createPrompt() {
@@ -92,7 +177,9 @@ function showIterations(id) {
         fetch(apiBase + `/prompts/${id}`)
             .then(r => r.json())
             .then(data => {
-                div.innerHTML = data.iterations.map(it => `<div>${escapeHtml(it.text)}</div>`).join('');
+                div.innerHTML = data.iterations.map((it, i) =>
+                    `<div><b>${i + 1}.</b> ${escapeHtml(it.text)}<div style="font-size:0.8em;color:#555;">${it.timestamp}</div></div>`
+                ).join('');
                 div.style.display = 'block';
             });
     } else {
@@ -131,6 +218,15 @@ function regeneratePrompt(id) {
     });
 }
 
+function usePrompt(id) {
+    const p = allPrompts.find(pr => pr.id === id);
+    if (p) {
+        document.getElementById('newPrompt').value = p.iterations[p.iterations.length-1].text;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+fetchSystemPrompt();
 fetchPrompts();
 </script>
 </body>
