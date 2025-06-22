@@ -27,7 +27,9 @@ The server will listen on `http://0.0.0.0:8000` by default. FastAPI automaticall
 
 This repository includes a small static frontend located in `frontend/`. When the
 API server is running you can open `http://localhost:8000/` in your browser to
-interact with prompts. The interface supports creating new prompts, viewing all
-stored prompts, voting, commenting and regenerating prompts via the API.
+interact with prompts. The interface sports a playful neobrutalist design that
+makes browsing prompt history and jumping back into previous prompts easy. You
+can create new prompts, view stored prompts, vote, comment and regenerate
+responses via the API.
 
 Make sure to set the `OPENAI_API_KEY` environment variable if you plan to use the `regenerate` endpoint.
