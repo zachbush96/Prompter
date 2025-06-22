@@ -1,4 +1,5 @@
 modules = ["python-3.12"]
+run = "python api.py"
 
 [nix]
 channel = "stable-24_05"
@@ -6,3 +7,6 @@ channel = "stable-24_05"
 [[ports]]
 localPort = 8000
 externalPort = 80
+
+[deployment]
+run = ["sh", "-c", "python api.py"]
