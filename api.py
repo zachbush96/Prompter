@@ -1,4 +1,6 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional
 
@@ -6,6 +8,14 @@ from prompter import PromptManager
 
 app = FastAPI(title="Prompter API")
 pm = PromptManager()
+
+# Serve the simple frontend
+app.mount("/static", StaticFiles(directory="frontend"), name="static")
+
+
+@app.get("/")
+def read_index():
+    return FileResponse("frontend/index.html")
 
 class PromptCreate(BaseModel):
     text: str

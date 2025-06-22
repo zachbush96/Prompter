@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompter Frontend</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: auto; }
+        .prompt { border: 1px solid #ccc; padding: 10px; margin: 10px 0; }
+        .iterations { background: #f9f9f9; padding: 5px; }
+        .comments { background: #eef; padding: 5px; }
+        button { margin-right: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Prompter</h1>
+
+    <h2>Create Prompt</h2>
+    <textarea id="newPrompt" rows="3" cols="80" placeholder="Enter prompt text..."></textarea><br>
+    <button onclick="createPrompt()">Create</button>
+
+    <h2>Prompts</h2>
+    <div id="prompts"></div>
+
+<script>
+const apiBase = '';
+
+function fetchPrompts() {
+    fetch(apiBase + '/prompts')
+        .then(r => r.json())
+        .then(data => {
+            const container = document.getElementById('prompts');
+            container.innerHTML = '';
+            data.forEach(p => {
+                const div = document.createElement('div');
+                div.className = 'prompt';
+                div.innerHTML = renderPrompt(p);
+                container.appendChild(div);
+            });
+        });
+}
+
+function renderPrompt(p) {
+    const last = p.iterations[p.iterations.length-1].text;
+    let html = `<b>ID:</b> ${p.id}<br>`;
+    html += `<b>Created:</b> ${p.created_at}<br>`;
+    html += `<b>Latest:</b> ${escapeHtml(last)}<br>`;
+    html += `<b>👍:</b> ${p.thumbs_up} <b>👎:</b> ${p.thumbs_down}<br>`;
+    html += `<button onclick="ratePrompt('${p.id}', true)">👍</button>`;
+    html += `<button onclick="ratePrompt('${p.id}', false)">👎</button>`;
+    html += `<button onclick="showIterations('${p.id}')">Show Iterations</button>`;
+    html += `<button onclick="showCommentBox('${p.id}')">Add Comment</button>`;
+    html += `<button onclick="regeneratePrompt('${p.id}')">Regenerate</button>`;
+    html += `<div id="iter-${p.id}" class="iterations" style="display:none"></div>`;
+    html += `<div id="comment-${p.id}" style="display:none">
+                <textarea id="comment-text-${p.id}" rows="2" cols="60" placeholder="Enter comment..."></textarea>
+                <button onclick="submitComment('${p.id}')">Submit</button>
+             </div>`;
+    html += `<div class="comments">${p.comments.map(c => `<div>${escapeHtml(c.text)}</div>`).join('')}</div>`;
+    return html;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.innerText = text;
+    return div.innerHTML;
+}
+
+function createPrompt() {
+    const text = document.getElementById('newPrompt').value;
+    fetch(apiBase + '/prompts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+    }).then(() => {
+        document.getElementById('newPrompt').value = '';
+        fetchPrompts();
+    });
+}
+
+function ratePrompt(id, up) {
+    fetch(apiBase + `/prompts/${id}/rate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ up })
+    }).then(fetchPrompts);
+}
+
+function showIterations(id) {
+    const div = document.getElementById('iter-' + id);
+    if (div.style.display === 'none') {
+        fetch(apiBase + `/prompts/${id}`)
+            .then(r => r.json())
+            .then(data => {
+                div.innerHTML = data.iterations.map(it => `<div>${escapeHtml(it.text)}</div>`).join('');
+                div.style.display = 'block';
+            });
+    } else {
+        div.style.display = 'none';
+    }
+}
+
+function showCommentBox(id) {
+    const div = document.getElementById('comment-' + id);
+    div.style.display = div.style.display === 'none' ? 'block' : 'none';
+}
+
+function submitComment(id) {
+    const text = document.getElementById('comment-text-' + id).value;
+    fetch(apiBase + `/prompts/${id}/comment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+    }).then(() => {
+        document.getElementById('comment-text-' + id).value = '';
+        fetchPrompts();
+    });
+}
+
+function regeneratePrompt(id) {
+    const systemPrompt = prompt('System prompt (optional):');
+    fetch(apiBase + `/prompts/${id}/regenerate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ system_prompt: systemPrompt || null })
+    })
+    .then(r => r.json())
+    .then(data => {
+        alert('New iteration:\n' + data.text);
+        fetchPrompts();
+    });
+}
+
+fetchPrompts();
+</script>
+</body>
+</html>
